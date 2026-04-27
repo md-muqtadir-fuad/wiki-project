@@ -1,0 +1,50 @@
+{
+  "input": "bnwiki-internal-links\\title-files\\bnwiki-latest-all-titles-in-ns0",
+  "settings": {
+    "strict_no_english": true,
+    "drop_disambiguation": true,
+    "sort_output": true,
+    "browser_min_words": 2,
+    "browser_max_words": 5,
+    "min_chars": 2,
+    "max_chars": 150,
+    "min_useful_ratio": 0.55,
+    "keep_joiners": false
+  },
+  "stats": {
+    "total": 437393,
+    "rejected:no_bengali_unicode": 166366,
+    "rejected:starts_with_symbol": 342,
+    "rejected:too_short": 652,
+    "rejected:empty_after_cleaning": 13,
+    "rejected:contains_latin_letter": 205,
+    "rejected:no_bengali_letter": 2099,
+    "kept_all_unique": 212949,
+    "kept_browser_unique": 169363,
+    "browser_skipped_too_long": 7213,
+    "browser_skipped_too_short": 34706,
+    "rejected:too_long": 11,
+    "rejected:mostly_symbols": 41020,
+    "duplicate_all": 12171,
+    "duplicate_browser": 13838,
+    "rejected:date_title": 1565,
+    "elapsed_seconds": 40.042
+  },
+  "outputs": {
+    "all": {
+      "path": "bnwiki-internal-links\\title-files\\bnwiki-clean-titles-full.txt",
+      "bytes": 10978279,
+      "sha256": "b9673049e7fc8ccedb0abd2881dd2497fe8f51178f2b045bb82a3a8a5da3aae1"
+    },
+    "browser": {
+      "path": "bnwiki-internal-links\\title-files\\bnwiki-clean-titles.txt",
+      "bytes": 8805620,
+      "sha256": "570d6950c6f82bca70d2b808b03be312ef0711af978c0d4c771b504a5a82538e"
+    },
+    "rejected_log": {
+      "path": "bnwiki-internal-links\\title-files\\rejected-titles.tsv",
+      "bytes": 14664317,
+      "sha256": "bba38ae92d54194589a45b8edf9a5397f34e17445e29eed4ff39bf742452c11f"
+    }
+  }
+}
