@@ -43,6 +43,15 @@
          *   spaces instead of underscores
          */
         titleListUrl: "https://raw.githubusercontent.com/md-muqtadir-fuad/wiki-project/master/bnwiki-internal-links/title-files/bnwiki-clean-titles.txt",
+        /**
+         * Robust mode:
+         * Do not download the whole title list in browser.
+         * Generate possible phrases from current article, then ask bnwiki API
+         * which pages actually exist.
+         */
+        useMediaWikiApiTitleLookup: true,
+        apiTitleBatchSize: 50,
+        maxApiCandidateTitles: 3000,
 
         /**
          * Default frequency range.
@@ -94,7 +103,7 @@
          */
         enablePipeLinks: true,
         enableSuffixPipeLinks: true,
-        enableSimilarityPipeLinks: true,
+        enableSimilarityPipeLinks: false,
         pipeMatchMinSimilarity: 0.78,
         pipePhrasePriority: [5, 4, 3, 2],
         enableSingleWordPipeLinks: true,
@@ -1586,70 +1595,247 @@
      *   1. titleData.set         -> O(1) exact lookup
      *   2. titleData.byFirstWord -> fast phrase matching, longest-first
      */
-    function loadTitleData() {
-        if (titleDataPromise) {
-            return titleDataPromise;
+    // ============================================================
+    // MEDIAWIKI API TITLE LOOKUP
+    // ============================================================
+
+    function uniqueArray(values) {
+        var seen = new Set();
+        var result = [];
+
+        values.forEach(function (value) {
+            value = normalizeTitle(value);
+
+            if (!value || seen.has(value)) {
+                return;
+            }
+
+            seen.add(value);
+            result.push(value);
+        });
+
+        return result;
+    }
+
+    function chunkArray(values, size) {
+        var chunks = [];
+        var i;
+
+        size = Math.max(1, parseInt(size, 10) || 50);
+
+        for (i = 0; i < values.length; i += size) {
+            chunks.push(values.slice(i, i + size));
         }
 
-        titleDataPromise = fetch(CONFIG.titleListUrl, {
-            method: "GET",
-            cache: "force-cache",
-            credentials: sameOrigin(CONFIG.titleListUrl) ? "same-origin" : "omit"
-        })
-            .then(function (response) {
-                if (!response.ok) {
-                    throw new Error("Title list load failed: HTTP " + response.status);
-                }
-                return response.text();
-            })
-            .then(function (text) {
-                var data = makeEmptyTitleData();
+        return chunks;
+    }
 
-                text.split(/\r?\n/).forEach(function (line) {
-                    data.stats.rawLines++;
+    function addApiCandidateTitle(candidateSet, title) {
+        title = normalizeTitle(title);
 
-                    var title = normalizeTitle(line);
+        if (!title || !hasBengaliLetter(title)) {
+            return;
+        }
 
-                    if (!title) {
+        if (title.indexOf("|") !== -1) {
+            return;
+        }
+
+        var words = splitTitleWords(title);
+
+        if (!words.length) {
+            return;
+        }
+
+        if (words.length > Math.max(1, Math.min(5, CONFIG.maxPhraseWords || 5))) {
+            return;
+        }
+
+        if (words.length === 1 && !CONFIG.enableSingleWordLinks && !CONFIG.enableSingleWordPipeLinks) {
+            return;
+        }
+
+        candidateSet.add(words.join(" "));
+    }
+
+    /**
+     * Generate only the titles that could actually appear in this article.
+     * This avoids loading the full 8MB+ GitHub title file.
+     */
+    function collectApiCandidateTitlesFromSegments(segments) {
+        var candidateSet = new Set();
+        var exactAllowedLengths = getAllowedPhraseLengthSet();
+        var pipeAllowedLengths = new Set(getEffectivePipePriority());
+        var scanPriority = getCombinedScanPriority();
+
+        segments.forEach(function (segment) {
+            if (segment.protected) {
+                return;
+            }
+
+            var segmentText = segment.text;
+            var tokens = collectBengaliTokens(segmentText);
+
+            for (var tokenIndex = 0; tokenIndex < tokens.length; tokenIndex++) {
+                scanPriority.forEach(function (wordCount) {
+                    var phraseInfo = buildPhraseFromTokens(segmentText, tokens, tokenIndex, wordCount);
+
+                    if (!phraseInfo) {
                         return;
                     }
-                    if (!hasBengaliLetter(title)) {
-                        data.stats.skippedNoBengali++;
-                        return;
+
+                    if (exactAllowedLengths.has(wordCount)) {
+                        if (wordCount > 1 || isUsefulBengaliToken(phraseInfo.phrase)) {
+                            addApiCandidateTitle(candidateSet, phraseInfo.phrase);
+                        }
                     }
 
-                    addTitleToIndex(data, title);
+                    if (CONFIG.enablePipeLinks && CONFIG.enableSuffixPipeLinks && pipeAllowedLengths.has(wordCount)) {
+                        buildSuffixPipeTargetCandidates(phraseInfo.words).forEach(function (target) {
+                            addApiCandidateTitle(candidateSet, target);
+                        });
+                    }
                 });
+            }
+        });
 
-                if (data.set.size === 0) {
-                    throw new Error("Title list loaded, but no valid titles were found.");
-                }
+        if (CONFIG.debugTestTitles && CONFIG.debugTestTitles.length) {
+            CONFIG.debugTestTitles.forEach(function (title) {
+                addApiCandidateTitle(candidateSet, title);
+            });
+        }
 
-                debugLog("[bn-internal-linker] Title data loaded:", data.stats);
-                debugLog("[bn-internal-linker] Title Set size:", data.set.size);
-                debugLog("[bn-internal-linker] Indexed first-word buckets:", data.byFirstWord.size);
-                debugLog("[bn-internal-linker] Max indexed title words:", data.maxWords);
+        var candidates = Array.from(candidateSet).sort(function (a, b) {
+            var aw = splitTitleWords(a).length;
+            var bw = splitTitleWords(b).length;
 
-                if (CONFIG.debugTestTitles && CONFIG.debugTestTitles.length) {
-                    var testRows = CONFIG.debugTestTitles.map(function (title) {
-                        var normalized = normalizeTitle(title);
-                        var words = splitTitleWords(normalized);
-                        return {
-                            title: normalized,
-                            words: words.join(" | "),
-                            wordCount: words.length,
-                            inTitleList: data.set.has(words.join(" ")),
-                            firstWordBucketExists: words.length ? data.byFirstWord.has(words[0]) : false
-                        };
-                    });
+            return bw - aw || a.localeCompare(b);
+        });
 
-                    debugTable("[bn-internal-linker] Debug test titles in loaded title list", testRows);
-                }
+        var maxCandidates = parseInt(CONFIG.maxApiCandidateTitles, 10);
 
-                return data;
+        if (Number.isFinite(maxCandidates) && maxCandidates > 0 && candidates.length > maxCandidates) {
+            debugWarn(
+                "[bn-internal-linker] API candidate title limit reached:",
+                candidates.length,
+                "->",
+                maxCandidates
+            );
+
+            candidates = candidates.slice(0, maxCandidates);
+        }
+
+        debugLog("[bn-internal-linker] API candidate titles:", candidates.length);
+
+        return candidates;
+    }
+
+    function queryExistingTitlesWithMediaWikiApi(candidateTitles) {
+        candidateTitles = uniqueArray(candidateTitles);
+
+        if (!candidateTitles.length) {
+            return Promise.resolve([]);
+        }
+
+        if (!mw.Api) {
+            return Promise.reject(new Error("mediawiki.api module is not loaded."));
+        }
+
+        var api = new mw.Api();
+        var batchSize = Math.max(1, Math.min(50, parseInt(CONFIG.apiTitleBatchSize, 10) || 50));
+        var batches = chunkArray(candidateTitles, batchSize);
+        var existing = new Set();
+        var batchIndex = 0;
+
+        function runNextBatch() {
+            if (batchIndex >= batches.length) {
+                return Promise.resolve(Array.from(existing));
+            }
+
+            var currentBatchNumber = batchIndex + 1;
+            var batch = batches[batchIndex];
+
+            batchIndex++;
+
+            setStatus(
+                "সম্ভাব্য শিরোনাম যাচাই হচ্ছে: " +
+                convert(currentBatchNumber) +
+                "/" +
+                convert(batches.length) +
+                " ব্যাচ…"
+            );
+
+            return api.post({
+                action: "query",
+                format: "json",
+                formatversion: 2,
+                redirects: 1,
+                titles: batch.join("|")
+            }).then(function (data) {
+                var pages = data && data.query && data.query.pages ? data.query.pages : [];
+
+                pages.forEach(function (page) {
+                    if (!page || page.missing || page.invalid) {
+                        return;
+                    }
+
+                    if (typeof page.ns === "number" && page.ns !== 0) {
+                        return;
+                    }
+
+                    addApiCandidateTitle(existing, page.title);
+                });
+            }).then(runNextBatch);
+        }
+
+        return runNextBatch();
+    }
+
+    function buildTitleDataFromExistingTitles(existingTitles) {
+        var data = makeEmptyTitleData();
+
+        existingTitles.forEach(function (title) {
+            data.stats.rawLines++;
+            addTitleToIndex(data, title);
+        });
+
+        if (data.set.size === 0) {
+            throw new Error("No valid existing Bengali article titles were found from API candidates.");
+        }
+
+        debugLog("[bn-internal-linker] API title data loaded:", data.stats);
+        debugLog("[bn-internal-linker] Title Set size:", data.set.size);
+        debugLog("[bn-internal-linker] Indexed first-word buckets:", data.byFirstWord.size);
+
+        if (CONFIG.debugTestTitles && CONFIG.debugTestTitles.length) {
+            var testRows = CONFIG.debugTestTitles.map(function (title) {
+                var normalized = normalizeTitle(title);
+                var words = splitTitleWords(normalized);
+
+                return {
+                    title: normalized,
+                    words: words.join(" | "),
+                    wordCount: words.length,
+                    inTitleList: data.set.has(words.join(" ")),
+                    firstWordBucketExists: words.length ? data.byFirstWord.has(words[0]) : false
+                };
             });
 
-        return titleDataPromise;
+            debugTable("[bn-internal-linker] Debug test titles in API title data", testRows);
+        }
+
+        return data;
+    }
+
+    function loadTitleDataForSegments(segments) {
+        if (!CONFIG.useMediaWikiApiTitleLookup) {
+            return loadTitleData();
+        }
+
+        var candidateTitles = collectApiCandidateTitlesFromSegments(segments);
+
+        return queryExistingTitlesWithMediaWikiApi(candidateTitles)
+            .then(buildTitleDataFromExistingTitles);
     }
 
     function sameOrigin(url) {
@@ -2668,24 +2854,24 @@
 
         $summary.val(oldSummary + "; " + newSummary);
     }
-function setStatus(message, type) {
-    type = type || "notice";
+    function setStatus(message, type) {
+        type = type || "notice";
 
-    console.log("[bn-internal-linker]", message);
+        console.log("[bn-internal-linker]", message);
 
-    if (mw.notify) {
-        mw.notify(message, {
-            type: type,
-            tag: "bn-internal-linker-status",
-            autoHide: type !== "error"
-        });
-        return;
+        if (mw.notify) {
+            mw.notify(message, {
+                type: type,
+                tag: "bn-internal-linker-status",
+                autoHide: type !== "error"
+            });
+            return;
+        }
+
+        if (type === "error") {
+            window.alert(message);
+        }
     }
-
-    if (type === "error") {
-        window.alert(message);
-    }
-}
 
     function askThreshold() {
         if (!CONFIG.askFrequencyThreshold) {
@@ -2832,17 +3018,23 @@ function setStatus(message, type) {
             return;
         }
 
-        setStatus("শিরোনাম তালিকা লোড হচ্ছে…");
+        setStatus("নিবন্ধের টেক্সট প্রস্তুত করা হচ্ছে…");
 
-        loadTitleData()
+        var protectedRanges = getProtectedRanges(originalText);
+        var segments = splitByProtectedRanges(originalText, protectedRanges);
+
+        debugLog("[bn-internal-linker] Protected ranges:", protectedRanges.length);
+        debugLog("[bn-internal-linker] Segments:", segments.length);
+
+        setStatus(
+            CONFIG.useMediaWikiApiTitleLookup
+                ? "সম্ভাব্য শিরোনাম যাচাই হচ্ছে…"
+                : "শিরোনাম তালিকা লোড হচ্ছে…"
+        );
+
+        loadTitleDataForSegments(segments)
             .then(function (titleData) {
                 setStatus("নিবন্ধের টেক্সট বিশ্লেষণ করা হচ্ছে…");
-
-                var protectedRanges = getProtectedRanges(originalText);
-                var segments = splitByProtectedRanges(originalText, protectedRanges);
-
-                debugLog("[bn-internal-linker] Protected ranges:", protectedRanges.length);
-                debugLog("[bn-internal-linker] Segments:", segments.length);
 
                 var freq = countTitleCandidateFrequencies(segments, titleData);
                 var matches = getLowFrequencyTitleMatches(freq, titleData, threshold);
@@ -3033,12 +3225,12 @@ function setStatus(message, type) {
     }
 
     /// MediaWiki user scripts should load required modules before using mw.util.
-mw.loader.using(["mediawiki.util"]).done(function () {
-    console.log("[bn-internal-linker] mediawiki.util loaded. Initializing...");
-    $(init);
-}).fail(function (error) {
-    console.error("[bn-internal-linker] Failed to load mediawiki.util:", error);
-});
+    mw.loader.using(["mediawiki.util", "mediawiki.api"]).done(function () {
+        console.log("[bn-internal-linker] mediawiki.util loaded. Initializing...");
+        $(init);
+    }).fail(function (error) {
+        console.error("[bn-internal-linker] Failed to load mediawiki.util:", error);
+    });
 
 })(mw, jQuery);
 // </nowiki>

@@ -25,7 +25,7 @@ import time
 import unicodedata
 from collections import Counter
 from pathlib import Path
-from typing import Iterable, Optional, TextIO, Tuple
+from typing import Dict, Iterable, List, Optional, TextIO, Tuple
 
 
 # =========================
@@ -37,6 +37,7 @@ DEFAULT_OUTPUT_DIR = Path("./bnwiki-internal-links/title-files")
 DEFAULT_OUTPUT_ALL = DEFAULT_OUTPUT_DIR / "bnwiki-clean-titles-full.txt"
 DEFAULT_OUTPUT_BROWSER = DEFAULT_OUTPUT_DIR / "bnwiki-clean-titles.txt" # 2-5
 DEFAULT_MANIFEST = DEFAULT_OUTPUT_DIR / "bnwiki-title-manifest.json"
+DEFAULT_SHARD_DIR = DEFAULT_OUTPUT_DIR / "title-shards"
 
 
 # =========================
@@ -228,6 +229,80 @@ def split_bengali_tokens(title: str) -> list[str]:
     return tokens
 
 
+# =========================
+# Browser shard helpers
+# =========================
+
+def fnv1a_32(text: str) -> int:
+    """Return FNV-1a 32-bit hash.
+
+    This is intentionally simple to mirror in JavaScript. Bengali characters are
+    in the BMP, so ord(ch) here matches charCodeAt(i) for normal Bengali text.
+    """
+    h = 2166136261
+    for ch in text:
+        h ^= ord(ch)
+        h = (h * 16777619) & 0xFFFFFFFF
+    return h
+
+
+def shard_id_for_browser_title(title: str, shard_count: int) -> int:
+    """Shard by first Bengali token.
+
+    The userscript can inspect article phrases, take their first Bengali token,
+    calculate the same shard id, and fetch only those shard files.
+    """
+    tokens = split_bengali_tokens(title)
+    if not tokens:
+        return 0
+    return fnv1a_32(tokens[0]) % shard_count
+
+
+def write_title_shards(
+    titles: Iterable[str],
+    shard_dir: Path,
+    shard_count: int,
+    sort_output: bool = True,
+) -> Tuple[List[dict], Dict[int, int]]:
+    """Write browser titles into deterministic shard files.
+
+    Returns:
+        (shard_files_metadata, shard_title_counts)
+    """
+    if shard_count < 1:
+        raise ValueError("shard_count must be at least 1")
+
+    shard_dir.mkdir(parents=True, exist_ok=True)
+    shards: Dict[int, List[str]] = {i: [] for i in range(shard_count)}
+
+    for title in titles:
+        sid = shard_id_for_browser_title(title, shard_count)
+        shards[sid].append(title)
+
+    shard_files: List[dict] = []
+    shard_stats: Dict[int, int] = {}
+
+    for sid in range(shard_count):
+        filename = f"shard-{sid:02d}.txt"
+        path = shard_dir / filename
+        lines = shards[sid]
+
+        if sort_output:
+            lines.sort()
+
+        atomic_write_lines(path, lines)
+        shard_stats[sid] = len(lines)
+        shard_files.append({
+            "id": sid,
+            "file": filename,
+            "titles": len(lines),
+            "bytes": path.stat().st_size,
+            "sha256": sha256_file(path),
+        })
+
+    return shard_files, shard_stats
+
+
 def validate_title(
     title: str,
     strict_no_english: bool = True,
@@ -319,6 +394,8 @@ def process_file(
     sort_output: bool = True,
     rejected_log: Optional[Path] = None,
     manifest_path: Optional[Path] = None,
+    shard_dir: Optional[Path] = None,
+    shard_count: int = 64,
     browser_min_words: int = 2,
     browser_max_words: int = 5,
     min_chars: int = 2,
@@ -334,6 +411,8 @@ def process_file(
         raise ValueError("browser_min_words must be at least 1")
     if browser_max_words < browser_min_words:
         raise ValueError("browser_max_words must be >= browser_min_words")
+    if shard_count < 1:
+        raise ValueError("shard_count must be at least 1")
 
     started = time.time()
     stats: Counter = Counter()
@@ -409,11 +488,21 @@ def process_file(
         all_titles.sort()
         browser_titles.sort()
 
+    shard_files: List[dict] = []
+    shard_stats: Dict[int, int] = {}
+
     if not dry_run:
         if output_all is not None:
             atomic_write_lines(output_all, all_titles)
         if output_browser is not None:
             atomic_write_lines(output_browser, browser_titles)
+        if shard_dir is not None:
+            shard_files, shard_stats = write_title_shards(
+                browser_titles,
+                shard_dir=shard_dir,
+                shard_count=shard_count,
+                sort_output=sort_output,
+            )
 
     elapsed = time.time() - started
     stats["elapsed_seconds"] = round(elapsed, 3)
@@ -431,12 +520,17 @@ def process_file(
                 "max_chars": max_chars,
                 "min_useful_ratio": min_useful_ratio,
                 "keep_joiners": keep_joiners,
+                "shards_enabled": shard_dir is not None,
+                "shard_count": shard_count,
+                "shard_algorithm": "fnv1a32(first_bengali_token) % shard_count",
             },
             "stats": dict(stats),
             "outputs": {
                 "all": file_info(output_all),
                 "browser": file_info(output_browser),
                 "rejected_log": file_info(rejected_log),
+                "shard_dir": str(shard_dir) if shard_dir is not None else None,
+                "shards": shard_files,
             },
         }
         manifest_path.parent.mkdir(parents=True, exist_ok=True)
@@ -456,6 +550,9 @@ def process_file(
         sort_output=sort_output,
         browser_min_words=browser_min_words,
         browser_max_words=browser_max_words,
+        shard_dir=shard_dir,
+        shard_count=shard_count,
+        shard_stats=shard_stats,
         dry_run=dry_run,
     )
 
@@ -478,6 +575,9 @@ def print_report(
     sort_output: bool,
     browser_min_words: int,
     browser_max_words: int,
+    shard_dir: Optional[Path],
+    shard_count: int,
+    shard_stats: Optional[Dict[int, int]],
     dry_run: bool,
 ) -> None:
     rejected_total = sum(count for key, count in stats.items() if key.startswith("rejected:"))
@@ -494,6 +594,8 @@ def print_report(
     print(f"Output all titles      : {output_all if output_all else 'disabled'}")
     print(f"Output browser titles  : {output_browser if output_browser else 'disabled'}")
     print(f"Browser word range     : {browser_min_words}-{browser_max_words}")
+    print(f"Shard dir              : {shard_dir if shard_dir else 'disabled'}")
+    print(f"Shard count            : {shard_count}")
     print(f"Rejected log           : {rejected_log if rejected_log else 'disabled'}")
     print(f"Manifest               : {manifest_path if manifest_path else 'disabled'}")
     print(f"Strict no English      : {strict_no_english}")
@@ -510,6 +612,12 @@ def print_report(
     print(f"Browser skipped long   : {stats['browser_skipped_too_long']:,}")
     print(f"Rejected total         : {rejected_total:,}")
     print(f"Elapsed seconds        : {stats['elapsed_seconds']}")
+
+    if shard_stats:
+        shard_counts = list(shard_stats.values())
+        print(f"Shard title count avg  : {sum(shard_counts) / len(shard_counts):,.1f}")
+        print(f"Shard title count min  : {min(shard_counts):,}")
+        print(f"Shard title count max  : {max(shard_counts):,}")
 
     if rejection_items:
         print("\nRejected by reason:")
@@ -532,6 +640,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--output-all", type=Path, default=DEFAULT_OUTPUT_ALL, help=f"Full cleaned title output. Default: {DEFAULT_OUTPUT_ALL}")
     parser.add_argument("--output-browser", type=Path, default=DEFAULT_OUTPUT_BROWSER, help=f"Browser-safe title output. Default: {DEFAULT_OUTPUT_BROWSER}")
     parser.add_argument("--manifest", type=Path, default=DEFAULT_MANIFEST, help=f"JSON manifest output. Default: {DEFAULT_MANIFEST}")
+    parser.add_argument("--shard-dir", type=Path, default=DEFAULT_SHARD_DIR, help=f"Directory for browser title shards. Default: {DEFAULT_SHARD_DIR}")
+    parser.add_argument("--shard-count", type=int, default=64, help="Number of shard files to generate. Default: 64")
     parser.add_argument("--write-rejected", type=Path, default=None, help="Optional TSV file path to save rejected titles with reasons.")
 
     parser.add_argument("--allow-english", action="store_true", help="Allow mixed Bengali-English titles. Default rejects Latin letters.")
@@ -549,6 +659,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--no-output-all", action="store_true", help="Do not write the full cleaned title file.")
     parser.add_argument("--no-output-browser", action="store_true", help="Do not write the browser-safe title file.")
     parser.add_argument("--no-manifest", action="store_true", help="Do not write JSON manifest.")
+    parser.add_argument("--no-shards", action="store_true", help="Do not write browser shard files.")
     parser.add_argument("--dry-run", action="store_true", help="Process and report only; do not write outputs.")
 
     return parser.parse_args()
@@ -560,6 +671,7 @@ def main() -> None:
     output_all = None if args.no_output_all else args.output_all
     output_browser = None if args.no_output_browser else args.output_browser
     manifest = None if args.no_manifest else args.manifest
+    shard_dir = None if args.no_shards else args.shard_dir
 
     process_file(
         input_file=args.input,
@@ -570,6 +682,8 @@ def main() -> None:
         sort_output=not args.preserve_order,
         rejected_log=args.write_rejected,
         manifest_path=manifest,
+        shard_dir=shard_dir,
+        shard_count=args.shard_count,
         browser_min_words=args.browser_min_words,
         browser_max_words=args.browser_max_words,
         min_chars=args.min_chars,

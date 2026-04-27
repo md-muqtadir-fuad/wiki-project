@@ -22,7 +22,7 @@ The `title-cleaner.py` script processes raw Bengali Wikipedia article titles and
 **Run normally:**
 Filters out non-Bengali characters, disambiguation pages, and invalid titles.
 ```bash
-python bnwiki-internal-links/title-cleaner.py --input bnwiki-internal-links/title-files/bnwiki-latest-all-titles-in-ns0 --output-all bnwiki-internal-links/title-files/bnwiki-clean-titles-full.txt --output-browser bnwiki-internal-links/title-files/bnwiki-clean-titles.txt --write-rejected bnwiki-internal-links/title-files/rejected-titles.tsv
+python bnwiki-internal-links\title-cleaner.py --input "bnwiki-internal-links\title-files\bnwiki-latest-all-titles-in-ns0" --output-all "bnwiki-internal-links\title-files\bnwiki-clean-titles-full.txt" --output-browser "bnwiki-internal-links\title-files\bnwiki-clean-titles.txt" --shard-dir "bnwiki-internal-links\title-files\title-shards" --shard-count 64 --write-rejected "bnwiki-internal-links\title-files\rejected-titles.tsv"
 ```
 
 **Run with rejected-title debug log:**

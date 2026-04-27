@@ -9,7 +9,10 @@
     "min_chars": 2,
     "max_chars": 150,
     "min_useful_ratio": 0.55,
-    "keep_joiners": false
+    "keep_joiners": false,
+    "shards_enabled": true,
+    "shard_count": 64,
+    "shard_algorithm": "fnv1a32(first_bengali_token) % shard_count"
   },
   "stats": {
     "total": 437393,
@@ -28,7 +31,7 @@
     "duplicate_all": 12171,
     "duplicate_browser": 13838,
     "rejected:date_title": 1565,
-    "elapsed_seconds": 32.616
+    "elapsed_seconds": 85.563
   },
   "outputs": {
     "all": {
@@ -45,6 +48,457 @@
       "path": "bnwiki-internal-links\\title-files\\rejected-titles.tsv",
       "bytes": 14664317,
       "sha256": "bba38ae92d54194589a45b8edf9a5397f34e17445e29eed4ff39bf742452c11f"
-    }
+    },
+    "shard_dir": "bnwiki-internal-links\\title-files\\title-shards",
+    "shards": [
+      {
+        "id": 0,
+        "file": "shard-00.txt",
+        "titles": 2666,
+        "bytes": 144339,
+        "sha256": "0c90dc36f6ed3120b119689fbd5fdd31fa85c2831b364a65fcc86b92cf848406"
+      },
+      {
+        "id": 1,
+        "file": "shard-01.txt",
+        "titles": 2211,
+        "bytes": 111611,
+        "sha256": "eacac49a9983c881b2b57a64b79a5260335c49d5d89d7423b62f714d6933e407"
+      },
+      {
+        "id": 2,
+        "file": "shard-02.txt",
+        "titles": 2477,
+        "bytes": 126503,
+        "sha256": "ff5f488e367a7f1b572a01a3cb8e5b098a9f66b9bdebb161e978bc99d69b80f0"
+      },
+      {
+        "id": 3,
+        "file": "shard-03.txt",
+        "titles": 2357,
+        "bytes": 119414,
+        "sha256": "77d617cc124cb20ef461520717623fa028186bc2baaf89f39e9f1075059a5ff4"
+      },
+      {
+        "id": 4,
+        "file": "shard-04.txt",
+        "titles": 2457,
+        "bytes": 128893,
+        "sha256": "d195082f6eae02d555bd8a419d1ebbbaa823763570b03841b9410ad34a2062b0"
+      },
+      {
+        "id": 5,
+        "file": "shard-05.txt",
+        "titles": 2855,
+        "bytes": 161538,
+        "sha256": "d680339e363dfb5dfe51897c051a8c9997b2e54f9c487eb8ce97d04bfd3184c7"
+      },
+      {
+        "id": 6,
+        "file": "shard-06.txt",
+        "titles": 2920,
+        "bytes": 156220,
+        "sha256": "88923bb618f912d4971d5b20360621d346e6dc476b63ffce0e4ba2648f120698"
+      },
+      {
+        "id": 7,
+        "file": "shard-07.txt",
+        "titles": 2407,
+        "bytes": 121480,
+        "sha256": "5854736a2939a939f3690fc30c72e1b97225a178a2a07494e1519b69634e376d"
+      },
+      {
+        "id": 8,
+        "file": "shard-08.txt",
+        "titles": 2641,
+        "bytes": 135233,
+        "sha256": "78c0276e88cf5cbb51fa3cb0b03e2a24c01880752a541b41146488f99a05f774"
+      },
+      {
+        "id": 9,
+        "file": "shard-09.txt",
+        "titles": 3517,
+        "bytes": 166135,
+        "sha256": "5ab81670b0962a332df8c4b4b1cad46c12450c926b65611815f44e7caa4cfa9e"
+      },
+      {
+        "id": 10,
+        "file": "shard-10.txt",
+        "titles": 4239,
+        "bytes": 251619,
+        "sha256": "aec11f07063b110fc149db97ee83c763a128ad6d47d7b78d658f99f9cbb10e66"
+      },
+      {
+        "id": 11,
+        "file": "shard-11.txt",
+        "titles": 1962,
+        "bytes": 103466,
+        "sha256": "f98edda56fe905895bd7c120638c10a8b3151c4ebbb173c002fdd7d205c1ce9f"
+      },
+      {
+        "id": 12,
+        "file": "shard-12.txt",
+        "titles": 2310,
+        "bytes": 122494,
+        "sha256": "c4f40d6c4d4994f1254033124a05fd93229234ea822bdadeddcc80fc248ef155"
+      },
+      {
+        "id": 13,
+        "file": "shard-13.txt",
+        "titles": 2548,
+        "bytes": 133815,
+        "sha256": "c3fad5348797d938c1f7a1ee8f8781604f4d4182a6c104f1aa2288077e661028"
+      },
+      {
+        "id": 14,
+        "file": "shard-14.txt",
+        "titles": 2354,
+        "bytes": 119229,
+        "sha256": "e0078c0523001e6c358f41faefffad4a631bcafc21ede831ba73f4a56ceb3c95"
+      },
+      {
+        "id": 15,
+        "file": "shard-15.txt",
+        "titles": 2095,
+        "bytes": 109903,
+        "sha256": "eda506feb4e701c81f6a64589a3fa57bc9d95590bcf893c34f5dcb495464ea4b"
+      },
+      {
+        "id": 16,
+        "file": "shard-16.txt",
+        "titles": 2110,
+        "bytes": 108387,
+        "sha256": "b25b83fd4652148f17feef2b41c10e38ab3f58510a501d3517f769c2fcec2583"
+      },
+      {
+        "id": 17,
+        "file": "shard-17.txt",
+        "titles": 3627,
+        "bytes": 178687,
+        "sha256": "20ef4e59a0bb8fe311c5b11186948d629b6c5dc1c294e674fbbf3dd513a9546b"
+      },
+      {
+        "id": 18,
+        "file": "shard-18.txt",
+        "titles": 2682,
+        "bytes": 135751,
+        "sha256": "41909889e5e5042d73ca2a39cb02d858972326aea5540edbb80e33d1e7620473"
+      },
+      {
+        "id": 19,
+        "file": "shard-19.txt",
+        "titles": 2627,
+        "bytes": 135188,
+        "sha256": "231185ce05608e0a962ec192ced9f134e9dec10b7e3739a0004c4c0a945a7082"
+      },
+      {
+        "id": 20,
+        "file": "shard-20.txt",
+        "titles": 2846,
+        "bytes": 150763,
+        "sha256": "0984b41e30c353dacb12b66730e22fafcc38fb096f1c8ea20504fb563b196877"
+      },
+      {
+        "id": 21,
+        "file": "shard-21.txt",
+        "titles": 2510,
+        "bytes": 131811,
+        "sha256": "451a940317e26bd60fc5a4eb9ca1390eb5de7865dc80870e09efbc63d816884f"
+      },
+      {
+        "id": 22,
+        "file": "shard-22.txt",
+        "titles": 2649,
+        "bytes": 149045,
+        "sha256": "7ef357e37590eeed63e2899533924c7171dbee28aa04530df5a2a0f1c23deff1"
+      },
+      {
+        "id": 23,
+        "file": "shard-23.txt",
+        "titles": 2296,
+        "bytes": 113698,
+        "sha256": "4c052ed41583a4071c08e7b4fbd1242fbd8a2c9066d3569658ec2d912d34afa5"
+      },
+      {
+        "id": 24,
+        "file": "shard-24.txt",
+        "titles": 2428,
+        "bytes": 129734,
+        "sha256": "86c9daf79e555fad2a18275b98ddd6e4fb9c41d31621d3e732fa01781b98bcfc"
+      },
+      {
+        "id": 25,
+        "file": "shard-25.txt",
+        "titles": 2509,
+        "bytes": 132304,
+        "sha256": "b5219d63a7a079f468d52e8478206e854e3d1e6da637b840952a6c9116eb601b"
+      },
+      {
+        "id": 26,
+        "file": "shard-26.txt",
+        "titles": 2321,
+        "bytes": 115497,
+        "sha256": "453f3b0c66a092489f01034be1edce3964e7821aa18b14b1a838479b91d7ed5e"
+      },
+      {
+        "id": 27,
+        "file": "shard-27.txt",
+        "titles": 3244,
+        "bytes": 167936,
+        "sha256": "ad1206256628ec3b3019f9194138e3f20009b4aa6c1b2442059ecbc3803d0118"
+      },
+      {
+        "id": 28,
+        "file": "shard-28.txt",
+        "titles": 2669,
+        "bytes": 146702,
+        "sha256": "8b983611e06e494554c0c4641cae28675a31078910ea1b1b695b87a7787f51e2"
+      },
+      {
+        "id": 29,
+        "file": "shard-29.txt",
+        "titles": 2590,
+        "bytes": 133171,
+        "sha256": "3f2d85bff0062007d7d9f939e6b295fc8df7f379684cf8c2931e2c5df9fdac54"
+      },
+      {
+        "id": 30,
+        "file": "shard-30.txt",
+        "titles": 2224,
+        "bytes": 114972,
+        "sha256": "e9dbac6dfb8551318c3014132a35b06c03c3a0431e54b220519db5efbe9c8d40"
+      },
+      {
+        "id": 31,
+        "file": "shard-31.txt",
+        "titles": 2300,
+        "bytes": 116339,
+        "sha256": "3e3879da5743c82151e6eec83ee9001e7ac5c4ac5d61b7b010b9618d0c7f7478"
+      },
+      {
+        "id": 32,
+        "file": "shard-32.txt",
+        "titles": 2525,
+        "bytes": 130536,
+        "sha256": "35b75496636f3d2809c9677d6144778377eb9bc11338e17574a3cc62dfd2e168"
+      },
+      {
+        "id": 33,
+        "file": "shard-33.txt",
+        "titles": 2733,
+        "bytes": 143642,
+        "sha256": "c62ed5da427345e15eb8d5d7c3ac67c9d2fbfebda140f6deab505959e32758b3"
+      },
+      {
+        "id": 34,
+        "file": "shard-34.txt",
+        "titles": 2491,
+        "bytes": 128221,
+        "sha256": "32b3dbb5be44427ae981dac3084155298d724365c501c2c07a6c0ab4ade834ce"
+      },
+      {
+        "id": 35,
+        "file": "shard-35.txt",
+        "titles": 2673,
+        "bytes": 138581,
+        "sha256": "f2681e6f56105e0567e780633a5efdb7b8f1cba9b220ff902708c2ce8a52b96b"
+      },
+      {
+        "id": 36,
+        "file": "shard-36.txt",
+        "titles": 4124,
+        "bytes": 221711,
+        "sha256": "e710a09ebbe167ecee1cac2c9d6f668c2468fbbf7763af88fe8e8bc68ece484d"
+      },
+      {
+        "id": 37,
+        "file": "shard-37.txt",
+        "titles": 2370,
+        "bytes": 119289,
+        "sha256": "23333e8bad8a1dfe67e3724fbf34c0c656cc36d8f3dca787979ef54f141eb1e1"
+      },
+      {
+        "id": 38,
+        "file": "shard-38.txt",
+        "titles": 2739,
+        "bytes": 141853,
+        "sha256": "bc7be2d0ff6cb706392cb5d37f5a2dc21b462d2a1de4af9b003148c4d544b137"
+      },
+      {
+        "id": 39,
+        "file": "shard-39.txt",
+        "titles": 2538,
+        "bytes": 128073,
+        "sha256": "04a25e1a9bc549914365a3daf4f00e8a65a81e3d1b932e7491596c5c50123950"
+      },
+      {
+        "id": 40,
+        "file": "shard-40.txt",
+        "titles": 2418,
+        "bytes": 121123,
+        "sha256": "6f388f77b8c087dfc9df70cd01972b6233c850e3778db4f5341cd2d48c8a9e51"
+      },
+      {
+        "id": 41,
+        "file": "shard-41.txt",
+        "titles": 3710,
+        "bytes": 191728,
+        "sha256": "23d874a7730446097e42634c6a560a21c4b6de8358022f5c8b2d5e23906bd7ae"
+      },
+      {
+        "id": 42,
+        "file": "shard-42.txt",
+        "titles": 2115,
+        "bytes": 108688,
+        "sha256": "7be50ee40f42d1912d05fa9406acc597a67ab3c8bccece0b8f3bdd35fd154bfe"
+      },
+      {
+        "id": 43,
+        "file": "shard-43.txt",
+        "titles": 2278,
+        "bytes": 115261,
+        "sha256": "c5aa7bdb76fbed63862301e2568b2e163c28e44c81680d9090be74ea3dcf61a7"
+      },
+      {
+        "id": 44,
+        "file": "shard-44.txt",
+        "titles": 2364,
+        "bytes": 123118,
+        "sha256": "c95bab47abf7cfcf3876bd6b6ee6812b7e4462603aa1f91b4134fd21713c1aeb"
+      },
+      {
+        "id": 45,
+        "file": "shard-45.txt",
+        "titles": 2403,
+        "bytes": 126160,
+        "sha256": "847dae391cd470fb04d7dba669fa81687f577020d50e5ad8ded350a276ae67fd"
+      },
+      {
+        "id": 46,
+        "file": "shard-46.txt",
+        "titles": 2695,
+        "bytes": 140710,
+        "sha256": "80e83a70beb6f650ed9c150cc81ce280b97a940442e1b2e2d3abbc54ea2f85d5"
+      },
+      {
+        "id": 47,
+        "file": "shard-47.txt",
+        "titles": 2265,
+        "bytes": 116122,
+        "sha256": "0f3c41aeb6b720ab95da33930e38cdcb0bffb225a4f6946c2089c71307267a95"
+      },
+      {
+        "id": 48,
+        "file": "shard-48.txt",
+        "titles": 2488,
+        "bytes": 117093,
+        "sha256": "f655858b130029b8547de61efeb0f0fddde4f0f25d3fcc2d8e4bfe8980fb7692"
+      },
+      {
+        "id": 49,
+        "file": "shard-49.txt",
+        "titles": 3036,
+        "bytes": 166039,
+        "sha256": "eccbabe8c2714b54860f123f7b50851fa2c09aacd29bd99d2614ec0252cc2b01"
+      },
+      {
+        "id": 50,
+        "file": "shard-50.txt",
+        "titles": 2806,
+        "bytes": 144149,
+        "sha256": "77b26a980a0a7cdb18376e0c897d9df530008b3fb36bfdcb9a1d44dbb410fffd"
+      },
+      {
+        "id": 51,
+        "file": "shard-51.txt",
+        "titles": 2941,
+        "bytes": 158235,
+        "sha256": "7babd3b0b010206f788c6ddba2121152424877e67dfc76d23507fba57355aea8"
+      },
+      {
+        "id": 52,
+        "file": "shard-52.txt",
+        "titles": 2585,
+        "bytes": 131891,
+        "sha256": "b09aeb9f8206465febde16ad84c23b3bef63ba3be31429550156ed01c60157e1"
+      },
+      {
+        "id": 53,
+        "file": "shard-53.txt",
+        "titles": 2505,
+        "bytes": 123770,
+        "sha256": "1a43d626784d4cc04b70566e5c685aa524a8216f1ac01e1a668eaf3b294f3284"
+      },
+      {
+        "id": 54,
+        "file": "shard-54.txt",
+        "titles": 3073,
+        "bytes": 174118,
+        "sha256": "89d531e93736bd3894cc2457143ee00f2d96ccffe829acfa230c836a1ae8283d"
+      },
+      {
+        "id": 55,
+        "file": "shard-55.txt",
+        "titles": 2407,
+        "bytes": 125915,
+        "sha256": "3ba13ddeb8f15691fa943312ff5a05de37668088e2cd0722cd8da5dbdee55bb8"
+      },
+      {
+        "id": 56,
+        "file": "shard-56.txt",
+        "titles": 2732,
+        "bytes": 137643,
+        "sha256": "e168d2aaa0ff03ecc66cf22b1b91a56bd9dac624502b28581722ff7c59f5950e"
+      },
+      {
+        "id": 57,
+        "file": "shard-57.txt",
+        "titles": 3452,
+        "bytes": 178389,
+        "sha256": "82cd2dea983352fbca10160f7211642252ad5c99bb9fb3b6bda1f2ad8bceea80"
+      },
+      {
+        "id": 58,
+        "file": "shard-58.txt",
+        "titles": 2108,
+        "bytes": 107921,
+        "sha256": "45c2cdeae3b06712024d2edee61ec571beab064cc22f23036fd542c9a0356920"
+      },
+      {
+        "id": 59,
+        "file": "shard-59.txt",
+        "titles": 2778,
+        "bytes": 148096,
+        "sha256": "edeae4b0967f271faa7738e83dc4533ff9f515bbf4eac25f06bc6c10fd7e7102"
+      },
+      {
+        "id": 60,
+        "file": "shard-60.txt",
+        "titles": 2368,
+        "bytes": 125286,
+        "sha256": "b551058f96daa02434d025d1ed51a1dc29d0a6ca649233549315605ca790e278"
+      },
+      {
+        "id": 61,
+        "file": "shard-61.txt",
+        "titles": 2640,
+        "bytes": 126429,
+        "sha256": "382a04db0b556c1adc142c016290871aa1b907a7258cf0b9c997dce37024308b"
+      },
+      {
+        "id": 62,
+        "file": "shard-62.txt",
+        "titles": 2762,
+        "bytes": 138224,
+        "sha256": "8a100cbc183fdbc423d4e2b86e98dee8befb0b88015ffb8a3112e1c9dc5ca81a"
+      },
+      {
+        "id": 63,
+        "file": "shard-63.txt",
+        "titles": 2593,
+        "bytes": 135729,
+        "sha256": "9a7db97224b0548df4f73ff7681ffd71aebdb303b4fbe4d5b7ceed0f35296f3a"
+      }
+    ]
   }
 }
