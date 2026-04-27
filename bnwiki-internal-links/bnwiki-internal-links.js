@@ -609,19 +609,18 @@
         }
 
         var newSummary = convert(addedLinks) + "টি অভ্যন্তরীণ সংযোগ যোগ করা হয়েছে";
-        var oldSummary = $summary.val().trim();
+        var oldSummary = String($summary.val() || "").trim();
 
         if (!oldSummary) {
-            $summary.val(newSummary);
+            $summary.val(newSummary).trigger("input").trigger("change");
             return;
         }
 
-        // Avoid adding the same summary repeatedly.
         if (oldSummary.indexOf(newSummary) !== -1) {
             return;
         }
 
-        $summary.val(oldSummary + "; " + newSummary);
+        $summary.val(oldSummary + "; " + newSummary).trigger("input").trigger("change");
     }
 
     function setStatus(message, type) {
@@ -690,7 +689,36 @@
 
         return window.confirm(message);
     }
+    // ============================================================
+    // EDITOR READ/WRITE HELPERS
+    // ============================================================
 
+    function getEditorText($textbox) {
+        try {
+            if ($.fn.textSelection) {
+                return $textbox.textSelection("getContents");
+            }
+        } catch (e) {
+            console.warn("[bn-internal-linker] textSelection getContents failed, falling back to val()", e);
+        }
+
+        return $textbox.val();
+    }
+
+    function setEditorText($textbox, text) {
+        try {
+            if ($.fn.textSelection) {
+                $textbox.textSelection("setContents", text);
+                $textbox.trigger("input").trigger("change");
+                return true;
+            }
+        } catch (e) {
+            console.warn("[bn-internal-linker] textSelection setContents failed, falling back to val()", e);
+        }
+
+        $textbox.val(text).trigger("input").trigger("change");
+        return true;
+    }
 
     // ============================================================
     // MAIN WORKFLOW
@@ -734,7 +762,7 @@
             return;
         }
 
-        var originalText = $textbox.val();
+        var originalText = getEditorText($textbox);
 
         if (!originalText || !originalText.trim()) {
             setStatus("সম্পাদনা বাক্স খালি।", "error");
@@ -771,7 +799,18 @@
                     return;
                 }
 
-                $textbox.val(result.text);
+                setEditorText($textbox, result.text);
+
+                var syncedText = getEditorText($textbox);
+
+                if (syncedText !== result.text) {
+                    setStatus(
+                        "লিঙ্ক তৈরি হয়েছে, কিন্তু editor sync সমস্যা হয়েছে। Syntax highlighter/CodeMirror বন্ধ করে আবার চেষ্টা করুন।",
+                        "error"
+                    );
+                    console.warn("[bn-internal-linker] Editor sync failed after setEditorText().");
+                    return;
+                }
                 appendEditSummary(result.addedLinks);
 
                 setStatus(
@@ -828,10 +867,8 @@
         }
     }
 
-    // MediaWiki user scripts should load required modules before using mw.util.
-    mw.loader.using(["mediawiki.util"]).then(function () {
+    mw.loader.using(["mediawiki.util", "jquery.textSelection"]).then(function () {
         $(init);
     });
-
 })(mediaWiki, jQuery);
 // </nowiki>
