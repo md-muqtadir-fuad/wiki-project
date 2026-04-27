@@ -32,8 +32,8 @@ from typing import Iterable, Optional, TextIO, Tuple
 # Default file paths
 # =========================
 
-DEFAULT_INPUT_FILE = Path("./new-project/title-files/bnwiki-latest-all-titles-in-ns0")
-DEFAULT_OUTPUT_DIR = Path("./new-project/title-files")
+DEFAULT_INPUT_FILE = Path("./bnwiki-internal-links/title-files/bnwiki-latest-all-titles-in-ns0")
+DEFAULT_OUTPUT_DIR = Path("./bnwiki-internal-links/title-files")
 DEFAULT_OUTPUT_ALL = DEFAULT_OUTPUT_DIR / "bnwiki-clean-titles-full.txt"
 DEFAULT_OUTPUT_BROWSER = DEFAULT_OUTPUT_DIR / "bnwiki-clean-titles.txt" # 2-5
 DEFAULT_MANIFEST = DEFAULT_OUTPUT_DIR / "bnwiki-title-manifest.json"
