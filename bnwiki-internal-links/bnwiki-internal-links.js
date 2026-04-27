@@ -42,7 +42,7 @@
          *   one Bengali Wikipedia title per line
          *   spaces instead of underscores
          */
-        titleListUrl: "https://raw.githubusercontent.com/YOUR_USERNAME/YOUR_REPO/main/bnwiki-clean-titles.txt",
+        titleListUrl: "https://raw.githubusercontent.com/md-muqtadir-fuad/wiki-project/master/bnwiki-internal-links/title-files/bnwiki-clean-titles.txt",
 
         /**
          * Default frequency range.
