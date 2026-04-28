@@ -51,7 +51,7 @@
          */
         useMediaWikiApiTitleLookup: true,
         apiTitleBatchSize: 50,
-        maxApiCandidateTitles: 3000,
+        maxApiCandidateTitles: 1200,
 
         /**
          * Default frequency range.
@@ -1700,12 +1700,13 @@
             });
         }
 
-        var priorityOrder = getCombinedScanPriority();
-        var wordPriority = {};
-
-        priorityOrder.forEach(function (wordCount, index) {
-            wordPriority[wordCount] = index + 1;
-        });
+        var wordPriority = {
+            2: 1,
+            3: 2,
+            4: 3,
+            5: 4,
+            1: 5
+        };
 
         var candidates = Array.from(candidateSet).sort(function (a, b) {
             var aw = splitTitleWords(a).length;
@@ -1769,7 +1770,7 @@
 
             debugLog("[bn-internal-linker] API batch sample:", batch.slice(0, 10));
 
-            return api.post({
+            return api.get({
                 action: "query",
                 format: "json",
                 formatversion: 2,
@@ -3004,38 +3005,6 @@
         return action === "edit" || action === "submit";
     }
 
-    function getErrorMessage(error) {
-        if (!error) {
-            return "Unknown error";
-        }
-
-        if (typeof error === "string") {
-            return error;
-        }
-
-        if (error.message) {
-            return error.message;
-        }
-
-        if (error.error && error.error.info) {
-            return error.error.info;
-        }
-
-        if (error.responseJSON && error.responseJSON.error && error.responseJSON.error.info) {
-            return error.responseJSON.error.info;
-        }
-
-        if (error.statusText) {
-            return error.statusText;
-        }
-
-        try {
-            return JSON.stringify(error);
-        } catch (e) {
-            return String(error);
-        }
-    }
-
     function runInternalLinker() {
         if (!isEditMode()) {
             redirectToEditMode();
@@ -3126,7 +3095,7 @@
             })
             .catch(function (error) {
                 console.error("[bn-internal-linker]", error);
-                setStatus("ত্রুটি: " + getErrorMessage(error), "error");
+                setStatus("ত্রুটি: " + error.message, "error");
             });
     }
 
