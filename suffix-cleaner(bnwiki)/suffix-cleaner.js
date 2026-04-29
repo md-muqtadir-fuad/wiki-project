@@ -15,7 +15,7 @@
 (function () {
   'use strict';
 
-  mw.loader.using(['mediawiki.util', 'mediawiki.notify']).then(function () {
+  mw.loader.using(['mediawiki.util']).then(function () {
     var CONFIG = {
       editSummaryNote: 'suffix-cleaner: Bengali hyphenated suffix cleanup',
       askBeforeFullPageClean: true,
@@ -24,6 +24,7 @@
       editButtonBoxId: 'bnwiki-suffix-cleaner-edit-button-box',
       portletLinkId: 't-bnwiki-suffix-cleaner',
       recentChangesLinkId: 't-bnwiki-filtered-rc',
+      floatingButtonId: 'bnwiki-suffix-cleaner-floating-button',
       requiredRecentChangesParams: {
         hidebots: '1',
         hidecategorization: '1',
@@ -36,7 +37,7 @@
     var PLACEHOLDER_SUFFIX = '_\uE001';
     var BN_CHAR = '[\\u0980-\\u09FF]';
     var BN_WORD = '[\\u0980-\\u09FF]+';
-    var DIGIT = '[0-9০-৯]+';
+    var DIGIT = '[0-9۰-০-৯]+';
     var SUFFIX_RE_PART = '(এর|র|কে|তে)';
 
     function isBnWiki() {
@@ -73,8 +74,16 @@
         return base;
       }
 
+      // Words already ending with Bengali vowel signs usually take only র:
+      // বাংলা-এর → বাংলার, নদী-এর → নদীর
       if (endsWithAny(base, 'ািীুূৃেৈোৌ')) {
         return base + 'র';
+      }
+
+      // Common independent-vowel endings: বই-এর should not become বইের.
+      // Conservative output keeps the natural য়ের form.
+      if (endsWithAny(base, 'ইঈউঊএঐওঔ')) {
+        return base + 'য়ের';
       }
 
       return base + 'ের';
@@ -260,8 +269,7 @@
         changed: text !== original
       };
     }
-
-    function appendEditSummary() {
+        function appendEditSummary() {
       var summary = document.getElementById('wpSummary');
 
       if (!summary) {
@@ -331,21 +339,44 @@
         return;
       }
 
-      mw.util.addPortletLink(
-        'p-tb',
-        '#',
-        'প্রত্যয় পরিষ্কারক',
-        CONFIG.portletLinkId,
-        'উৎস সম্পাদনা মোডে বাংলা হাইফেন-যুক্ত প্রত্যয় পরিষ্কার করে'
-      );
+      var portletIds = ['p-tb', 'p-cactions', 'p-personal'];
+      var added = null;
 
-      var link = document.getElementById(CONFIG.portletLinkId);
+      for (var i = 0; i < portletIds.length; i++) {
+        if (document.getElementById(portletIds[i])) {
+          added = mw.util.addPortletLink(
+            portletIds[i],
+            '#',
+            'প্রত্যয় পরিষ্কারক',
+            CONFIG.portletLinkId,
+            'উৎস সম্পাদনা মোডে বাংলা হাইফেন-যুক্ত প্রত্যয় পরিষ্কার করে'
+          );
+          break;
+        }
+      }
+
+      var link = document.getElementById(CONFIG.portletLinkId) || added;
       if (link) {
         link.addEventListener('click', function (event) {
           event.preventDefault();
           runCleaner();
         });
       }
+    }
+
+    function makeCleanerButton(id) {
+      var button = document.createElement('button');
+      button.id = id;
+      button.type = 'button';
+      button.className = 'mw-ui-button mw-ui-progressive';
+      button.textContent = 'প্রত্যয় পরিষ্কারক';
+      button.title = 'বাংলা হাইফেন-যুক্ত প্রত্যয় পরিষ্কার করুন';
+
+      button.addEventListener('click', function () {
+        runCleaner();
+      });
+
+      return button;
     }
 
     function addInlineEditButton() {
@@ -359,28 +390,43 @@
       box.id = CONFIG.editButtonBoxId;
       box.style.margin = '6px 0';
 
-      var button = document.createElement('button');
-      button.id = CONFIG.editButtonId;
-      button.type = 'button';
-      button.className = 'mw-ui-button mw-ui-progressive';
-      button.textContent = 'প্রত্যয় পরিষ্কারক';
-      button.title = 'বাংলা হাইফেন-যুক্ত প্রত্যয় পরিষ্কার করুন';
-
-      button.addEventListener('click', function () {
-        runCleaner();
-      });
-
-      box.appendChild(button);
+      box.appendChild(makeCleanerButton(CONFIG.editButtonId));
       textarea.parentNode.insertBefore(box, textarea);
     }
 
+    function addFloatingEditButton() {
+      if (document.getElementById(CONFIG.floatingButtonId)) {
+        return;
+      }
+
+      var button = makeCleanerButton(CONFIG.floatingButtonId);
+      button.style.position = 'fixed';
+      button.style.right = '16px';
+      button.style.bottom = '16px';
+      button.style.zIndex = '9999';
+      button.style.boxShadow = '0 2px 8px rgba(0,0,0,0.25)';
+
+      document.body.appendChild(button);
+    }
+
+    var addButtonsRetryCount = 0;
+
     function addCleanerButtons() {
-      if (!isEditPage() || !getEditBox()) {
+      if (!isEditPage()) {
+        return;
+      }
+
+      if (!getEditBox()) {
+        if (addButtonsRetryCount < 20) {
+          addButtonsRetryCount++;
+          window.setTimeout(addCleanerButtons, 250);
+        }
         return;
       }
 
       addPortletButton();
       addInlineEditButton();
+      addFloatingEditButton();
     }
 
     function isRecentChangesPage() {
